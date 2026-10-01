@@ -1,94 +1,147 @@
+```sql
 /*
 ===============================================================================
-Section 4: Data Loading Configuration & CSV Import (Bronze Layer)
-===============================================================================
-PURPOSE:
-    Configures MySQL session security settings for bulk loading and executes 
-    full-refresh (TRUNCATE + LOAD) data ingestion from raw CSV flat files into 
-    the Bronze staging tables for both CRM and ERP source domains.
-
-WARNING:
-    1. TRUNCATE OPERATIONS ARE NON-RECOVERABLE: Running this section empties 
-       all target Bronze tables immediately before reloading. Any existing data 
-       will be completely wiped out.
-    2. LOCAL INFILE SECURITY RISK: Enabling `local_infile` allows local file 
-       transfers to the database server. Ensure this privilege is granted only 
-       to trusted ETL batch user accounts in non-development environments.
-    3. FILE PATH ACCESSIBILITY: The executing MySQL process must have read 
-       permissions for the specified file paths (e.g., standard Uploads directory).
+Procedure Name : bronze.load_bronze
+Purpose        : Truncates and loads raw CRM and ERP CSV data into the Bronze 
+                 schema tables, measuring individual table and total batch execution time.
 ===============================================================================
 */
 
--- =========================================================
--- 1. Ingestion Configuration & Environment Checks
--- =========================================================
+CREATE OR ALTER PROCEDURE bronze.load_bronze AS
+BEGIN
+	-- Track timing for individual tables and total batch execution
+	DECLARE @start_time DATETIME, @end_time DATETIME, @batch_start_time DATETIME, @batch_end_time DATETIME;
 
--- Enable client-side local file bulk loading capability for the global server session
-SET GLOBAL local_infile = 1;
+	BEGIN TRY
+		-- Record batch start time
+		SET @batch_start_time = GETDATE();
+		PRINT '=============================';
+		PRINT 'Load the Bronze Layer';
+		PRINT '=============================';
 
--- Verify runtime status for 'local_infile' to ensure setting was successfully applied
-SHOW VARIABLES LIKE 'local_infile';
+		PRINT '-----------------------------';
+		PRINT 'Loading the CRM Tables';
+		PRINT '-----------------------------';
 
+		-- Load CRM Customer Info Table
+		SET @start_time = GETDATE();
+		PRINT '>>Truncating Table: bronze.crm_cust_info';
+		TRUNCATE TABLE bronze.crm_cust_info;
 
--- =========================================================
--- 2. CRM Source System File Ingestion
--- =========================================================
+		PRINT '>>Inserting Data into: bronze.crm_cust_info';
+		BULK INSERT bronze.crm_cust_info
+		FROM 'C:\Users\pc\Documents\SQL\sql-data-warehouse-project\datasets\source_crm\cust_info.csv'
+		WITH(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT 'Loading Duration: '+ Cast(DATEDIFF(SECOND, @start_time , @end_time) AS NVARCHAR) + 'Seconds';
 
--- Load: crm_cust_info
-TRUNCATE TABLE crm_cust_info;
-LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/cust_info.csv'
-INTO TABLE crm_cust_info
-FIELDS TERMINATED BY ',' 
-OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES;
+		-- Load CRM Product Info Table
+		SET @start_time = GETDATE();
+		PRINT '>>Truncating Table: bronze.crm_prd_info';
+		TRUNCATE TABLE bronze.crm_prd_info;
 
--- Load: crm_prd_info
-TRUNCATE TABLE crm_prd_info;
-LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/prd_info.csv'
-INTO TABLE crm_prd_info
-FIELDS TERMINATED BY ',' 
-OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES;
+		PRINT '>>Inserting Data into: bronze.crm_prd_info';
+		BULK INSERT bronze.crm_prd_info
+		FROM 'C:\Users\pc\Documents\SQL\sql-data-warehouse-project\datasets\source_crm\prd_info.csv'
+		WITH(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT 'Loading Duration: '+ Cast(DATEDIFF(SECOND, @start_time , @end_time) AS NVARCHAR) + 'Seconds';
 
--- Load: crm_sales_details
-TRUNCATE TABLE crm_sales_details;
-LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/sales_details.csv'
-INTO TABLE crm_sales_details
-FIELDS TERMINATED BY ',' 
-OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES;
+		-- Load CRM Sales Details Table
+		SET @start_time = GETDATE();
+		PRINT '>>Truncating Table: bronze.crm_sales_details';
+		TRUNCATE TABLE bronze.crm_sales_details;
 
+		PRINT '>>Inserting Data into: bronze.crm_sales_details';
+		BULK INSERT bronze.crm_sales_details
+		FROM 'C:\Users\pc\Documents\SQL\sql-data-warehouse-project\datasets\source_crm\sales_details.csv'
+		WITH(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT 'Loading Duration: '+ Cast(DATEDIFF(SECOND, @start_time , @end_time) AS NVARCHAR) + 'Seconds';
 
--- =========================================================
--- 3. ERP Source System File Ingestion
--- =========================================================
+		PRINT '-----------------------------';
+		PRINT 'Loading the ERP Tables';
+		PRINT '-----------------------------';
 
--- Load: erp_cust_az12
-TRUNCATE TABLE erp_cust_az12;
-LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/cust_az12.csv'
-INTO TABLE erp_cust_az12
-FIELDS TERMINATED BY ',' 
-OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES;
+		-- Load ERP Customer Table
+		SET @start_time = GETDATE();
+		PRINT '>>Truncating Table: bronze.erp_CUST_AZ12';
+		TRUNCATE TABLE bronze.erp_CUST_AZ12;
 
--- Load: erp_loc_a101
-TRUNCATE TABLE erp_loc_a101;
-LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/loc_a101.csv'
-INTO TABLE erp_loc_a101
-FIELDS TERMINATED BY ',' 
-OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES;
+		PRINT '>>Inserting Data into: bronze.erp_CUST_AZ12';
+		BULK INSERT bronze.erp_CUST_AZ12
+		FROM 'C:\Users\pc\Documents\SQL\sql-data-warehouse-project\datasets\source_erp\CUST_AZ12.csv'
+		WITH(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT 'Loading Duration: '+ Cast(DATEDIFF(SECOND, @start_time , @end_time) AS NVARCHAR) + 'Seconds';
 
--- Load: erp_px_cat_g1v2
-TRUNCATE TABLE erp_px_cat_g1v2;
-LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/px_cat_g1v2.csv'
-INTO TABLE erp_px_cat_g1v2
-FIELDS TERMINATED BY ',' 
-OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES;
+		-- Load ERP Location Table
+		SET @start_time = GETDATE();
+		PRINT '>>Truncating Table: bronze.erp_LOC_A101';
+		TRUNCATE TABLE bronze.erp_LOC_A101;
+
+		PRINT '>>Inserting Data into: bronze.erp_LOC_A101';
+		BULK INSERT bronze.erp_LOC_A101
+		FROM 'C:\Users\pc\Documents\SQL\sql-data-warehouse-project\datasets\source_erp\LOC_A101.csv'
+		WITH(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT 'Loading Duration: '+ Cast(DATEDIFF(SECOND, @start_time , @end_time) AS NVARCHAR) + 'Seconds';
+
+		-- Load ERP Product Category Table
+		SET @start_time = GETDATE();
+		PRINT '>>Truncating Table: bronze.erp_PX_CAT_G1V2';
+		TRUNCATE TABLE bronze.erp_PX_CAT_G1V2;
+
+		PRINT '>>Inserting Data into: bronze.erp_PX_CAT_G1V2';
+		BULK INSERT bronze.erp_PX_CAT_G1V2
+		FROM 'C:\Users\pc\Documents\SQL\sql-data-warehouse-project\datasets\source_erp\PX_CAT_G1V2.csv'
+		WITH(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT 'Loading Duration: '+ Cast(DATEDIFF(SECOND, @start_time , @end_time) AS NVARCHAR) + 'Seconds';
+
+		-- Log total batch execution duration
+		SET @batch_end_time = GETDATE();
+		PRINT '================================================';
+		PRINT 'Loading The Bronze Layer Completed in: '+ Cast(DATEDIFF(SECOND, @batch_start_time , @batch_end_time) AS NVARCHAR) + 'Seconds';
+		PRINT '================================================';	
+	END TRY
+	BEGIN CATCH 
+		-- Handle and log runtime errors
+		PRINT '=================================================';
+		PRINT 'ERROR OCCURED DURING LOADING THE BRONZE LAYER';
+		PRINT 'ERROR MESSAGE '+ ERROR_MESSAGE();
+		PRINT 'ERROR NUMBER  '+ CAST(ERROR_NUMBER() AS NVARCHAR);
+		PRINT 'ERROR STATE   '+ CAST(ERROR_STATE() AS NVARCHAR);
+		PRINT '==================================================';
+	END CATCH
+END;
+GO
+
+-- Execute the procedure
+EXEC bronze.load_bronze;
+
+```
