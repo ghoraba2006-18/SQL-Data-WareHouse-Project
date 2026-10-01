@@ -1,4 +1,4 @@
-```sql
+
 /*
 ===============================================================================
 Procedure Name : bronze.load_bronze
@@ -144,4 +144,3 @@ GO
 -- Execute the procedure
 EXEC bronze.load_bronze;
 
-```
