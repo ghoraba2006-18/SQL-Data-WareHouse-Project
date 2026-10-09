@@ -5,15 +5,6 @@ Purpose:
     This stored procedure performs the ETL (Extract, Transform, Load) process to 
     populate the Silver layer tables from the raw Bronze layer data.
     
-    Key Operations:
-    - Cleanses, standardizes, and transforms raw CRM and ERP data.
-    - Deduplicates customer records (keeping the latest profile).
-    - Normalizes codes and descriptions (e.g., gender, marital status, product line, country names).
-    - Derives product effective end dates (`prd_end_dt`) using window functions.
-    - Standardizes and corrects invalid date formats, sales calculations, and invalid birth dates.
-    - Truncates existing Silver tables before reloading to maintain a clean full load.
-    - Logs execution status, step durations, and error details via TRY...CATCH.
-
 WARNING:
     Executing this procedure will TRUNCATE and overwrite all data in the target 
     Silver tables (`silver.crm_cust_info`, `silver.crm_prd_info`, `silver.crm_sales_details`, 
